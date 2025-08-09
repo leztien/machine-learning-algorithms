@@ -8,9 +8,7 @@ from collections import OrderedDict
 from itertools import product
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.colors import Colormap
 
 
 
@@ -33,9 +31,6 @@ class Kernel(ABC):
 
 
 class RBF(Kernel):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-    
     def __call__(self, x1, x2):
         assert all(hasattr(x, '__len__') for x in (x1,x2)) and len(x1)==len(x2)
         v = self.hyperparameters.get('signal_variance')
@@ -66,10 +61,11 @@ class GaussianProcessRegression:
             self.kernel.hyperparameters = {k:v for k,v in zip(d.keys(), e)}
             K = self._compute_K(X, X)
             n = K.shape[0]
-            loglikelihood = -(1/2) * y.T @ np.linalg.inv(K) @ y \
-                            -(1/2) * np.log(np.linalg.det(K))\
-                            -(n/2) * np.log(2*np.pi)
-            loglikelihood = loglikelihood[0][0]
+            loglikelihood = (
+                                -(1/2) * y.T @ np.linalg.inv(K) @ y
+                                -(1/2) * np.log(np.linalg.det(K))
+                                -(n/2) * np.log(2*np.pi)
+                            )[0][0]
             
             if loglikelihood > mx:
                 mx = loglikelihood
@@ -106,15 +102,16 @@ model = GaussianProcessRegression(kernel=kernel, noise=0)
 # Fit
 model.fit(X, y)
 
-# Optimize the hypers
+# Optimize the hypers (optional)
 grid = {'signal_variance': np.logspace(-2, 2, 5),
         'length': np.logspace(-2, 1, 4),}
 model.optimize(**grid)
 
-# Predict
+# Make new data for prediction
 x_new = np.linspace(start=0, stop=10, num=100)
 X_new = x_new.reshape(-1, 1)
 
+# Predict
 y_pred, var_pred = model.predict(X_new)
 std_pred = var_pred ** (1/2)
 
